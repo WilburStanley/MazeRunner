@@ -11,3 +11,16 @@ export const mulberry32 = (seed: number): (() => number) => {
     return ((mixed ^ (mixed >>> 14)) >>> 0) / UINT32_RANGE;
   };
 };
+
+export type RandomSource = () => number;
+
+export const randomIntBelow = (nextRandom: RandomSource, upperBound: number): number =>
+  Math.floor(nextRandom() * upperBound);
+
+// Fisher-Yates shuffle, driven by the seeded source so it is repeatable
+export const shuffleInPlace = <Item>(items: Item[], nextRandom: RandomSource): void => {
+  for (let index = items.length - 1; index > 0; index--) {
+    const swapIndex = randomIntBelow(nextRandom, index + 1);
+    [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+  }
+};

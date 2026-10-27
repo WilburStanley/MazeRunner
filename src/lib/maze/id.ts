@@ -1,7 +1,7 @@
 export const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; // no I, L, O, U
 export const ALPHABET_BASE = ALPHABET.length; // 32
 export const VERSION = "M1";
-export const ALGORITHMS = ["K", "B", "P"] as const;
+export const ALGORITHMS = ["K", "B"] as const;
 export type Algorithm = (typeof ALGORITHMS)[number];
 export const MIN_SIZE = 5;
 export const MAX_SIZE = 51;

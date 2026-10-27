@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mulberry32 } from "../src/lib/maze/prng";
+import { mulberry32, shuffleInPlace } from "../src/lib/maze/prng";
 
 describe("mulberry32", () => {
   it("is deterministic for the same seed", () => {
@@ -21,5 +21,15 @@ describe("mulberry32", () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThan(1);
     }
+  });
+
+  it("shuffles repeatably and keeps every item", () => {
+    const original = [1, 2, 3, 4, 5, 6, 7, 8];
+    const firstShuffle = [...original];
+    const secondShuffle = [...original];
+    shuffleInPlace(firstShuffle, mulberry32(99));
+    shuffleInPlace(secondShuffle, mulberry32(99));
+    expect(firstShuffle).toEqual(secondShuffle);
+    expect([...firstShuffle].sort()).toEqual(original);
   });
 });
