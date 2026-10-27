@@ -1,13 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { generateMaze } from "../src/lib/maze/generate";
-import {
-  DIRECTIONS,
-  OPPOSITE_DIRECTION,
-  getNeighbor,
-  getStartPosition,
-  type Direction,
-  type Position,
-} from "../src/lib/maze/grid";
+import { DIRECTIONS, OPPOSITE_DIRECTION, getStartPosition } from "../src/lib/maze/grid";
 import {
   MAX_MOVES,
   MAX_RUN_DURATION_MS,
@@ -15,19 +8,10 @@ import {
   isPlausibleDuration,
   replayMoves,
 } from "../src/lib/maze/replay";
-import { findShortestPath } from "../src/lib/maze/solve";
-
-const pathToMoves = (path: Position[]): Direction[] =>
-  path.slice(1).map((position, index) => {
-    const previous = path[index];
-    return DIRECTIONS.find((direction) => {
-      const neighbor = getNeighbor(previous, direction);
-      return neighbor.row === position.row && neighbor.column === position.column;
-    })!;
-  });
+import { solveToMoves } from "./helpers";
 
 const maze = generateMaze({ algorithm: "K", size: 21, seed: 12345 });
-const shortestMoves = pathToMoves(findShortestPath(maze)!);
+const shortestMoves = solveToMoves(maze);
 
 describe("replayMoves", () => {
   it("accepts the shortest path", () => {
