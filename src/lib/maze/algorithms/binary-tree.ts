@@ -8,7 +8,7 @@ export const generateBinaryTree = (size: number, nextRandom: RandomSource): Maze
     for (let column = 0; column < size; column++) {
       const options: Direction[] = [];
       if (row > 0) options.push("north");
-      if (column < size - 1) options.push("east");
+      if (column > 0) options.push("west");
       if (options.length === 0) continue;
       const chosenDirection = options[randomIntBelow(nextRandom, options.length)];
       carvePassage(maze, { row, column }, chosenDirection);

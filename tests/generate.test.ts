@@ -27,6 +27,41 @@ const countPassages = (maze: Maze): number => {
   return openSides / 2; // every passage is open from both sides
 };
 
+describe("binary tree mazes", () => {
+  const SEEDS = [0, 1, 2, 3, 7, 99, 2024, 12345, 987654, 1073741823];
+  const SIZES = [11, 21, 31, 41, 51];
+
+  it("never have the open edges as a shortcut from start to finish", () => {
+    for (const size of SIZES) {
+      for (const seed of SEEDS) {
+        const path = findShortestPath(generateMaze({ algorithm: "B", size, seed }));
+        const lastIndex = size - 1;
+        const staysOnTopThenRight = path!.every(
+          ({ row, column }) => row === 0 || column === lastIndex,
+        );
+        const staysOnLeftThenBottom = path!.every(
+          ({ row, column }) => column === 0 || row === lastIndex,
+        );
+        expect(staysOnTopThenRight, `top+right, size ${size} seed ${seed}`).toBe(false);
+        expect(staysOnLeftThenBottom, `left+bottom, size ${size} seed ${seed}`).toBe(false);
+      }
+    }
+  });
+
+  it("always need an interior turn: the route cuts through the middle", () => {
+    for (const size of SIZES) {
+      for (const seed of SEEDS) {
+        const path = findShortestPath(generateMaze({ algorithm: "B", size, seed }));
+        const lastIndex = size - 1;
+        const touchesInterior = path!.some(
+          ({ row, column }) => row > 0 && row < lastIndex && column > 0 && column < lastIndex,
+        );
+        expect(touchesInterior, `size ${size} seed ${seed}`).toBe(true);
+      }
+    }
+  });
+});
+
 describe("generateMaze", () => {
   it("is deterministic: same spec gives an identical maze", () => {
     for (const algorithm of ALGORITHMS) {
