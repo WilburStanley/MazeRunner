@@ -1,4 +1,4 @@
-const NICKNAME_MAX_LENGTH = 20;
+export const NICKNAME_MAX_LENGTH = 20;
 const NICKNAME_PATTERN = /^[A-Za-z0-9 _.-]+$/; // plain ASCII, safe for the PDF font
 
 export type NicknameResult = { ok: true; nickname: string | null } | { ok: false };

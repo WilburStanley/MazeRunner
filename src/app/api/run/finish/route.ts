@@ -13,6 +13,9 @@ export const POST = async (request: Request) => {
   );
   if (!result.ok) return jsonError(RUN_ERROR_STATUS[result.error], result.error);
 
-  const { ok: _ok, ...responseBody } = result;
-  return jsonResponse(responseBody, NO_STORE_CACHE_CONTROL);
+  const { mazeId, elapsedMs, moveCount, nickname, resultToken, challengeId } = result;
+  return jsonResponse(
+    { mazeId, elapsedMs, moveCount, nickname, resultToken, challengeId },
+    NO_STORE_CACHE_CONTROL,
+  );
 };

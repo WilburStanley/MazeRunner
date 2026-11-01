@@ -5,6 +5,7 @@ import { MAX_RUN_DURATION_MS, MIN_MS_PER_MOVE } from "../src/lib/maze/replay";
 import { finishRun, startRun, type FinishRunInput } from "../src/lib/run";
 import { signToken, verifyToken } from "../src/lib/tokens";
 import { solveToMoves } from "./helpers";
+import { parseChallengeId } from "../src/lib/challenge-id";
 
 const TEST_SECRET = "run-test-secret-not-real";
 const OTHER_SECRET = "another-run-test-secret";
@@ -61,6 +62,11 @@ describe("finishRun", () => {
       mazeId: MAZE_ID,
       elapsedMs: REALISTIC_ELAPSED_MS,
       moveCount: solutionMoves.length,
+      nickname: "Ana",
+    });
+    expect(parseChallengeId(result.challengeId, TEST_SECRET)).toEqual({
+      mazeId: MAZE_ID,
+      elapsedMs: REALISTIC_ELAPSED_MS,
       nickname: "Ana",
     });
     expect(verifyToken(result.resultToken, TEST_SECRET, "result")).toEqual({

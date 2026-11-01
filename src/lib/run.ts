@@ -1,3 +1,4 @@
+import { encodeChallengeId } from "./challenge-id";
 import { generateMaze } from "./maze/generate";
 import { encodeId, parseId } from "./maze/id";
 import { isPlausibleDuration, replayMoves, type ReplayFailure } from "./maze/replay";
@@ -34,6 +35,7 @@ export type FinishRunResult =
       elapsedMs: number;
       moveCount: number;
       nickname: string | null;
+      challengeId: string;
       resultToken: string;
     }
   | Failure;
@@ -63,7 +65,7 @@ export const finishRun = (input: FinishRunInput, nowMs: number, secret: string):
   const replay = replayMoves(generateMaze(spec), input.moves);
   if (!replay.ok) return fail(replay.reason);
 
-  // Time comes from the server clock only, never from the client
+  // Time comes from the API's own clock only, never from the client
   const elapsedMs = nowMs - run.startedAtMs;
   if (!isPlausibleDuration(replay.moveCount, elapsedMs)) return fail("implausible-time");
 
@@ -77,6 +79,10 @@ export const finishRun = (input: FinishRunInput, nowMs: number, secret: string):
     },
     secret,
   );
+  const challengeId = encodeChallengeId(
+    { spec, elapsedMs, nickname: nicknameResult.nickname },
+    secret,
+  );
   return {
     ok: true,
     mazeId: run.mazeId,
@@ -84,5 +90,6 @@ export const finishRun = (input: FinishRunInput, nowMs: number, secret: string):
     moveCount: replay.moveCount,
     nickname: nicknameResult.nickname,
     resultToken,
+    challengeId,
   };
 };

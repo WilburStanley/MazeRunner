@@ -39,10 +39,10 @@ export const decodeSeed = (encoded: string): number | null => {
   return seed;
 };
 
-const buildBody = (algorithm: string, size: string, encodedSeed: string): string =>
+export const buildBody = (algorithm: string, size: string, encodedSeed: string): string =>
   [VERSION, algorithm, size, encodedSeed].join(ID_SEPARATOR);
 
-const computeChecksum = (body: string): string => {
+export const computeChecksum = (body: string): string => {
   let weightedSum = 0;
   for (let index = 0; index < body.length; index++) {
     weightedSum = (weightedSum + body.charCodeAt(index) * (index + 1)) % ALPHABET_BASE;

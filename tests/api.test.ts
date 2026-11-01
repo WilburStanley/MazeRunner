@@ -98,6 +98,7 @@ describe("run endpoints", () => {
     const body = await response.json();
     expect(body.elapsedMs).toBe(REALISTIC_ELAPSED_MS);
     expect(typeof body.resultToken).toBe("string");
+    expect(typeof body.challengeId).toBe("string");
   });
 
   it("rejects an impossibly fast finish with 422", async () => {

@@ -22,7 +22,7 @@ const isDirection = (value: unknown): value is Direction =>
 const isMoveList = (value: unknown): value is Direction[] =>
   Array.isArray(value) && value.length <= MAX_MOVES && value.every(isDirection);
 
-// The client only reports moves; the server decides whether they solve the maze
+// The client only reports moves; the API decides whether they solve the maze
 export const replayMoves = (maze: Maze, moves: unknown): ReplayResult => {
   if (!isMoveList(moves)) return { ok: false, reason: "invalid-moves" };
 

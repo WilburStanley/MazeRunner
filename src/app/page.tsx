@@ -1,69 +1,253 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import type { FormEvent } from "react";
+import Mark from "@/components/Mark";
+import MazePreview from "@/components/MazePreview";
+import Segmented from "@/components/Segmented";
+import { describeApiError, fetchDailyMaze, fetchMaze } from "@/lib/api-client";
+import { buildChallengePath, looksLikeChallengeId } from "@/lib/challenge-link";
+import { ALGORITHM_INFO, describeSpec } from "@/lib/maze/describe";
+import { generateMaze } from "@/lib/maze/generate";
+import type { Maze } from "@/lib/maze/grid";
+import { ALGORITHMS, encodeId, parseId, randomSeed, type Algorithm } from "@/lib/maze/id";
+import BlankSheetLink from "@/components/BlankSheetLink";
+
+const ALGORITHM_OPTIONS = ALGORITHMS.map((algorithm) => ({
+  value: algorithm,
+  label: ALGORITHM_INFO[algorithm].name,
+}));
+const SIZE_OPTIONS = [11, 21, 31, 41].map((size) => ({ value: size, label: String(size) }));
+const DEFAULT_SIZE = 21;
+
+// False while the page is prerendered, true in the browser. Random values stay out of the
+// prerender, so there is nothing to mismatch during hydration.
+const subscribeNever = () => () => {};
+const useIsClient = (): boolean =>
+  useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
   );
-}
+
+type DailyState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; date: string; mazeId: string; maze: Maze };
+
+const HomePage = () => {
+  const router = useRouter();
+  const [daily, setDaily] = useState<DailyState>({ status: "loading" });
+  const [dailyAttempt, setDailyAttempt] = useState(0);
+  const [algorithm, setAlgorithm] = useState<Algorithm>("K");
+  const [size, setSize] = useState(DEFAULT_SIZE);
+  // The preview and "Generate and play" share this seed: the maze you see is the maze you get
+  const [seed, setSeed] = useState(randomSeed);
+  const isClient = useIsClient();
+  const [idInput, setIdInput] = useState("");
+  const [idError, setIdError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadDaily = async () => {
+      const dailyResponse = await fetchDailyMaze();
+      if (!dailyResponse.ok) {
+        if (!cancelled) {
+          setDaily({ status: "error", message: describeApiError(dailyResponse.error) });
+        }
+        return;
+      }
+
+      const { date, mazeId } = dailyResponse.data;
+      const mazeResponse = await fetchMaze(mazeId);
+      if (cancelled) return;
+      setDaily(
+        mazeResponse.ok
+          ? { status: "ready", date, mazeId, maze: mazeResponse.data.maze }
+          : { status: "error", message: describeApiError(mazeResponse.error) },
+      );
+    };
+    void loadDaily();
+    return () => {
+      cancelled = true;
+    };
+  }, [dailyAttempt]);
+
+  const handleRetryDaily = () => {
+    setDaily({ status: "loading" });
+    setDailyAttempt((attempt) => attempt + 1);
+  };
+
+  const newSpec = useMemo(
+    () => (isClient ? { algorithm, size, seed } : null),
+    [isClient, algorithm, size, seed],
+  );
+  const newMaze = useMemo(() => (newSpec === null ? null : generateMaze(newSpec)), [newSpec]);
+
+  const handleGenerate = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (newSpec !== null) router.push(`/play/${encodeId(newSpec)}`);
+  };
+
+  const handlePlayById = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    // A challenge ID is signed by the API, so the challenge page does the real check
+    if (looksLikeChallengeId(idInput)) {
+      router.push(buildChallengePath(idInput.trim().toUpperCase()));
+      return;
+    }
+    const spec = parseId(idInput);
+    if (spec === null) {
+      setIdError("That ID is not valid. Check it for typos.");
+      return;
+    }
+    router.push(`/play/${encodeId(spec)}`);
+  };
+
+  const dailySpec = daily.status === "ready" ? parseId(daily.mazeId) : null;
+
+  return (
+    <main className="home">
+      <header className="home-intro">
+        <div className="home-title-row">
+          <Mark size={40} />
+          <h1 className="title">Maze Runner</h1>
+        </div>
+        <p className="home-lede">
+          Every maze is a short ID. Share the ID and everyone plays the same maze. Every time is
+          checked, so nobody has to take your word for it.
+        </p>
+      </header>
+
+      <section className="home-section home-daily" aria-labelledby="daily-heading">
+        <h2 id="daily-heading" className="label">
+          Daily maze
+        </h2>
+        <div className="home-daily-body">
+          <div className="daily-meta">
+            <p className="maze-id">{daily.status === "ready" ? daily.mazeId : "—"}</p>
+            {daily.status === "error" ? (
+              <p className="small">
+                <span className="form-error">{daily.message}</span>{" "}
+                <button type="button" className="text-button" onClick={handleRetryDaily}>
+                  Retry
+                </button>
+              </p>
+            ) : (
+              <p className="dim small">
+                {dailySpec !== null && daily.status === "ready"
+                  ? `${describeSpec(dailySpec)} · ${daily.date} · changes 00:00 UTC`
+                  : "Same maze for everyone, once a day."}
+              </p>
+            )}
+          </div>
+          {daily.status === "ready" ? (
+            <Link href={`/play/${daily.mazeId}`} className="button button-primary">
+              Play daily maze
+            </Link>
+          ) : (
+            <span className="button button-primary" aria-disabled="true">
+              Play daily maze
+            </span>
+          )}
+        </div>
+      </section>
+
+      <form
+        className="home-section home-new"
+        aria-labelledby="new-heading"
+        onSubmit={handleGenerate}
+      >
+        <h2 id="new-heading" className="label">
+          New maze
+        </h2>
+        <div className="home-new-grid">
+          <div className="home-new-controls">
+            <Segmented
+              legend="Algorithm"
+              name="algorithm"
+              value={algorithm}
+              options={ALGORITHM_OPTIONS}
+              onChange={setAlgorithm}
+            />
+            <p className="dim small">{ALGORITHM_INFO[algorithm].note}</p>
+            <Segmented
+              legend="Size, cells per side"
+              name="size"
+              value={size}
+              options={SIZE_OPTIONS}
+              onChange={setSize}
+            />
+          </div>
+
+          <div className="home-new-preview">
+            <div className="board">
+              {newMaze !== null ? (
+                <MazePreview
+                  maze={newMaze}
+                  label={`Preview of a ${size} by ${size} ${ALGORITHM_INFO[algorithm].name} maze`}
+                />
+              ) : (
+                <div className="maze-frame preview-empty">
+                  <p className="label">Loading</p>
+                </div>
+              )}
+            </div>
+            <p className="maze-id preview-id">{newSpec !== null ? encodeId(newSpec) : "—"}</p>
+            <div className="preview-actions">
+              {newSpec !== null ? <BlankSheetLink mazeId={encodeId(newSpec)} /> : <span />}
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => setSeed(randomSeed())}
+              >
+                Shuffle
+              </button>
+            </div>
+          </div>
+
+          <div className="home-new-action">
+            <button type="submit" className="button button-primary" disabled={newSpec === null}>
+              Generate and play
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <form className="home-section home-id" noValidate onSubmit={handlePlayById}>
+        <label htmlFor="maze-id" className="label">
+          Play by maze ID
+        </label>
+        <div className="inline-field">
+          <input
+            id="maze-id"
+            className="field"
+            value={idInput}
+            placeholder="M1-K-21-7QX4D2-F"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            aria-invalid={idError !== null}
+            aria-describedby={idError !== null ? "maze-id-error" : undefined}
+            onChange={(event) => {
+              setIdInput(event.target.value);
+              setIdError(null);
+            }}
+          />
+          <button type="submit" className="button">
+            Load
+          </button>
+        </div>
+        {idError !== null && (
+          <p id="maze-id-error" className="form-error" role="alert">
+            {idError}
+          </p>
+        )}
+      </form>
+    </main>
+  );
+};
+
+export default HomePage;
