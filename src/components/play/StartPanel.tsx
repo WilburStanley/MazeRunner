@@ -51,7 +51,7 @@ const StartPanel = ({
           className="field"
           value={nickname}
           maxLength={NICKNAME_MAX_LENGTH}
-          placeholder="anon"
+          placeholder="Wilbur Stanley"
           autoComplete="off"
           spellCheck={false}
           aria-invalid={errorMessage !== null}
