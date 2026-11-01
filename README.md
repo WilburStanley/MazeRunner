@@ -1,5 +1,7 @@
 # Maze Runner
 
+![Maze Runner Screenshot](/MazeRunner-Screenshot.png)
+
 A maze game where **every maze is a short ID**. Share the ID and everyone plays the exact same maze. Every time is checked by the API, so nobody has to take your word for it. There is no database: the whole app is stateless and runs on the free Vercel Hobby plan.
 
 - **Live app:** https://mazerunner-genesis.vercel.app
