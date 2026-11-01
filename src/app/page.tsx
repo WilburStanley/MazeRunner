@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
+import BlankSheetLink from "@/components/BlankSheetLink";
 import Mark from "@/components/Mark";
 import MazePreview from "@/components/MazePreview";
 import Segmented from "@/components/Segmented";
@@ -13,7 +14,6 @@ import { ALGORITHM_INFO, describeSpec } from "@/lib/maze/describe";
 import { generateMaze } from "@/lib/maze/generate";
 import type { Maze } from "@/lib/maze/grid";
 import { ALGORITHMS, encodeId, parseId, randomSeed, type Algorithm } from "@/lib/maze/id";
-import BlankSheetLink from "@/components/BlankSheetLink";
 
 const ALGORITHM_OPTIONS = ALGORITHMS.map((algorithm) => ({
   value: algorithm,
@@ -86,8 +86,7 @@ const HomePage = () => {
   );
   const newMaze = useMemo(() => (newSpec === null ? null : generateMaze(newSpec)), [newSpec]);
 
-  const handleGenerate = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleGenerate = () => {
     if (newSpec !== null) router.push(`/play/${encodeId(newSpec)}`);
   };
 
@@ -155,11 +154,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      <form
-        className="home-section home-new"
-        aria-labelledby="new-heading"
-        onSubmit={handleGenerate}
-      >
+      <section className="home-section home-new" aria-labelledby="new-heading">
         <h2 id="new-heading" className="label">
           New maze
         </h2>
@@ -209,43 +204,48 @@ const HomePage = () => {
           </div>
 
           <div className="home-new-action">
-            <button type="submit" className="button button-primary" disabled={newSpec === null}>
+            <button
+              type="button"
+              className="button button-primary"
+              disabled={newSpec === null}
+              onClick={handleGenerate}
+            >
               Generate and play
             </button>
           </div>
-        </div>
-      </form>
 
-      <form className="home-section home-id" noValidate onSubmit={handlePlayById}>
-        <label htmlFor="maze-id" className="label">
-          Play by maze ID
-        </label>
-        <div className="inline-field">
-          <input
-            id="maze-id"
-            className="field"
-            value={idInput}
-            placeholder="M1-K-21-7QX4D2-F"
-            autoComplete="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            aria-invalid={idError !== null}
-            aria-describedby={idError !== null ? "maze-id-error" : undefined}
-            onChange={(event) => {
-              setIdInput(event.target.value);
-              setIdError(null);
-            }}
-          />
-          <button type="submit" className="button">
-            Load
-          </button>
+          <form className="home-lookup" noValidate onSubmit={handlePlayById}>
+            <label htmlFor="maze-id" className="label">
+              Play by maze or challenge ID
+            </label>
+            <div className="inline-field">
+              <input
+                id="maze-id"
+                className="field"
+                value={idInput}
+                placeholder="M1-K-21-7QX4D2-F or C1-…"
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                aria-invalid={idError !== null}
+                aria-describedby={idError !== null ? "maze-id-error" : undefined}
+                onChange={(event) => {
+                  setIdInput(event.target.value);
+                  setIdError(null);
+                }}
+              />
+              <button type="submit" className="button">
+                Load
+              </button>
+            </div>
+            {idError !== null && (
+              <p id="maze-id-error" className="form-error" role="alert">
+                {idError}
+              </p>
+            )}
+          </form>
         </div>
-        {idError !== null && (
-          <p id="maze-id-error" className="form-error" role="alert">
-            {idError}
-          </p>
-        )}
-      </form>
+      </section>
     </main>
   );
 };

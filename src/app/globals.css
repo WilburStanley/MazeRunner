@@ -467,7 +467,8 @@ body {
   grid-template-areas:
     "controls"
     "preview"
-    "action";
+    "action"
+    "lookup";
 }
 
 .home-new-controls {
@@ -513,6 +514,13 @@ body {
   flex: 0 0 auto;
 }
 
+.home-lookup {
+  grid-area: lookup;
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
 .home-new-action {
   grid-area: action;
   align-self: start;
@@ -534,10 +542,11 @@ body {
 
   .home-new-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       "controls preview"
-      "action preview";
+      "action preview"
+      "lookup preview";
     column-gap: 3rem;
   }
 
